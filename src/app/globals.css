@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-accent: #4fc3f7;
+    --color-accent-hover: #81d4fa;
+    --color-accent-dark: #0288d1;
+    --color-bg: #dde3ea;
+    --color-card: #ffffff;
+    --color-border: #c8d1dc;
+    --color-text: #1a1a2e;
+    --color-text-secondary: #4a5568;
+    --color-input: #f0f4f8;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+}
+
+.font-body {
+  font-family: var(--font-body), sans-serif;
+}

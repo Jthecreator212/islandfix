@@ -13,12 +13,16 @@ export async function signUp(
   supabase: SupabaseClient,
   email: string,
   password: string,
-  metadata: { full_name: string; role: string }
+  metadata: { full_name: string; role: string },
+  redirectTo?: string
 ) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: metadata },
+    options: {
+      data: metadata,
+      emailRedirectTo: redirectTo,
+    },
   })
   return { data, error }
 }

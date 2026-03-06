@@ -21,7 +21,8 @@ export default function SignupPage() {
     setError('')
 
     const supabase = createClient()
-    const { error } = await signUp(supabase, email, password, { full_name: fullName, role })
+    const redirectTo = `${window.location.origin}/auth/callback`
+    const { error } = await signUp(supabase, email, password, { full_name: fullName, role }, redirectTo)
 
     if (error) {
       setError(error.message)

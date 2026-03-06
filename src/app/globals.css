@@ -15,9 +15,9 @@
 }
 
 .font-display {
-  font-family: var(--font-display), sans-serif;
+  font-family: 'Space Grotesk Variable', sans-serif;
 }
 
 .font-body {
-  font-family: var(--font-body), sans-serif;
+  font-family: 'Inter Variable', sans-serif;
 }

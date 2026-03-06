@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { signIn } from '@/lib/data/auth'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Loader2 } from 'lucide-react'
@@ -19,7 +20,7 @@ export default function LoginPage() {
     setError('')
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await signIn(supabase, email, password)
 
     if (error) {
       setError(error.message)
@@ -87,7 +88,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center mt-6 text-sm text-[#4a5568]">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/signup" className="text-[#4fc3f7] font-medium hover:underline">Sign up</Link>
         </p>
       </div>

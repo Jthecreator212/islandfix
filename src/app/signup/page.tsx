@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { signUp } from '@/lib/data/auth'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Mail, Lock, User, Loader2, Home, Wrench } from 'lucide-react'
 
 export default function SignupPage() {
@@ -14,7 +14,6 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const router = useRouter()
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,13 +21,7 @@ export default function SignupPage() {
     setError('')
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName, role },
-      },
-    })
+    const { error } = await signUp(supabase, email, password, { full_name: fullName, role })
 
     if (error) {
       setError(error.message)
@@ -49,7 +42,7 @@ export default function SignupPage() {
             </div>
             <h2 className="font-display font-bold text-2xl">Check your email</h2>
             <p className="text-[#4a5568] mt-3 text-sm">
-              We've sent a confirmation link to <strong>{email}</strong>. Click the link to activate your account.
+              We&apos;ve sent a confirmation link to <strong>{email}</strong>. Click the link to activate your account.
             </p>
           </div>
         </div>

@@ -1,15 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser, getProfile } from '@/lib/data/profiles'
 import Navbar from '@/components/Navbar'
 import Link from 'next/link'
 import { Search, Shield, MessageSquare, Star, Wrench, Zap, Hammer, Paintbrush, Home, TreePine, ArrowRight, CheckCircle } from 'lucide-react'
 
 export default async function HomePage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser(supabase)
 
   let profile = null
   if (user) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    const { data } = await getProfile(supabase, user.id)
     profile = data
   }
 
@@ -148,7 +149,7 @@ export default async function HomePage() {
             <a href="#" className="hover:text-[#1a1a2e] transition-colors">Privacy</a>
             <a href="#" className="hover:text-[#1a1a2e] transition-colors">Terms</a>
             <a href="#" className="hover:text-[#1a1a2e] transition-colors">Contact</a>
-            <span>© 2026 IslandFix</span>
+            <span>&copy; 2026 IslandFix</span>
           </div>
         </div>
       </footer>

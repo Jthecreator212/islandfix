@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { sendMessage } from '@/lib/data/messages'
 import { Send, Loader2 } from 'lucide-react'
 
 interface Message {
@@ -38,7 +39,6 @@ export default function BookingMessages({ bookingId, currentUserId, initialMessa
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `booking_id=eq.${bookingId}` },
         async (payload) => {
-          // Fetch the full message with sender info
           const { data } = await supabase
             .from('messages')
             .select('*, sender:profiles!sender_id(full_name)')
@@ -60,7 +60,7 @@ export default function BookingMessages({ bookingId, currentUserId, initialMessa
 
     setSending(true)
     const supabase = createClient()
-    await supabase.from('messages').insert({
+    await sendMessage(supabase, {
       booking_id: bookingId,
       sender_id: currentUserId,
       content: newMessage.trim(),

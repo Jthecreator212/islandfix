@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getCurrentUser } from '@/lib/data/profiles'
+import { createBooking } from '@/lib/data/bookings'
 import { Loader2, CheckCircle } from 'lucide-react'
 
 interface Props {
@@ -25,7 +27,7 @@ export default function BookingForm({ tradespersonId, tradespersonName }: Props)
     setError('')
 
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser(supabase)
 
     if (!user) {
       setError('You must be logged in')
@@ -33,7 +35,7 @@ export default function BookingForm({ tradespersonId, tradespersonName }: Props)
       return
     }
 
-    const { error: bookingError } = await supabase.from('bookings').insert({
+    const { error: bookingError } = await createBooking(supabase, {
       homeowner_id: user.id,
       tradesperson_id: tradespersonId,
       title,

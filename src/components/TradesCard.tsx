@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { Star, MapPin, Clock, BadgeCheck } from 'lucide-react'
 
-interface Props {
-  tradesperson: any
-  profile: any
+export interface Props {
+  tradesperson: { id: string; trade_category: string; is_verified: boolean; availability_status: string; rating: number; total_reviews: number; experience_years: number; hourly_rate: number | null }
+  profile: { full_name: string; bio: string | null; location: string | null }
 }
 
 export default function TradesCard({ tradesperson, profile }: Props) {

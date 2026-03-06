@@ -1,4 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser, getProfile } from '@/lib/data/profiles'
+import { getBookingDetail } from '@/lib/data/bookings'
+import { getBookingMessages } from '@/lib/data/messages'
 import { redirect, notFound } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import BookingMessages from '@/components/BookingMessages'
@@ -8,27 +11,16 @@ import { Calendar, MapPin, DollarSign, Clock } from 'lucide-react'
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser(supabase)
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-
-  const { data: booking } = await supabase
-    .from('bookings')
-    .select('*, homeowner:profiles!homeowner_id(full_name, email), tradesperson:profiles!tradesperson_id(full_name, email)')
-    .eq('id', id)
-    .single()
+  const { data: profile } = await getProfile(supabase, user.id)
+  const { data: booking } = await getBookingDetail(supabase, id)
 
   if (!booking) notFound()
-
-  // Verify user is a participant
   if (booking.homeowner_id !== user.id && booking.tradesperson_id !== user.id) notFound()
 
-  const { data: messages } = await supabase
-    .from('messages')
-    .select('*, sender:profiles!sender_id(full_name)')
-    .eq('booking_id', id)
-    .order('created_at', { ascending: true })
+  const { data: messages } = await getBookingMessages(supabase, id)
 
   const isHomeowner = booking.homeowner_id === user.id
   const otherPerson = isHomeowner ? booking.tradesperson : booking.homeowner
@@ -83,7 +75,6 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
 
-            {/* Actions */}
             <BookingActions
               bookingId={booking.id}
               status={booking.status}

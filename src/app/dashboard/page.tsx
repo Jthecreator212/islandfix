@@ -1,29 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser, getProfile } from '@/lib/data/profiles'
+import { getUserBookings } from '@/lib/data/bookings'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Link from 'next/link'
-import { Calendar, MessageSquare, Star, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser(supabase)
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const { data: profile } = await getProfile(supabase, user.id)
   if (!profile) redirect('/login')
 
-  // Fetch bookings based on role
-  const bookingField = profile.role === 'homeowner' ? 'homeowner_id' : 'tradesperson_id'
-  const otherField = profile.role === 'homeowner' ? 'tradesperson_id' : 'homeowner_id'
+  const { data: bookings } = await getUserBookings(supabase, user.id, profile.role)
 
-  const { data: bookings } = await supabase
-    .from('bookings')
-    .select(`*, homeowner:profiles!homeowner_id(full_name), tradesperson:profiles!tradesperson_id(full_name)`)
-    .eq(bookingField, user.id)
-    .order('created_at', { ascending: false })
-    .limit(10)
-
-  const statusIcons: Record<string, any> = {
+  const statusIcons: Record<string, { icon: React.ComponentType<{ size?: number }>; color: string }> = {
     pending: { icon: Clock, color: 'text-yellow-600 bg-yellow-50' },
     accepted: { icon: CheckCircle, color: 'text-blue-600 bg-blue-50' },
     in_progress: { icon: AlertCircle, color: 'text-purple-600 bg-purple-50' },
@@ -31,7 +24,6 @@ export default async function DashboardPage() {
     cancelled: { icon: XCircle, color: 'text-red-600 bg-red-50' },
   }
 
-  // Stats
   const pendingCount = bookings?.filter(b => b.status === 'pending').length || 0
   const activeCount = bookings?.filter(b => ['accepted', 'in_progress'].includes(b.status)).length || 0
   const completedCount = bookings?.filter(b => b.status === 'completed').length || 0
@@ -82,7 +74,7 @@ export default async function DashboardPage() {
           <h2 className="font-display font-bold text-xl mb-4">Your Bookings</h2>
           <div className="space-y-3">
             {bookings && bookings.length > 0 ? (
-              bookings.map((booking: any) => {
+              bookings.map((booking: { id: string; title: string; status: string; created_at: string; homeowner: { full_name: string } | null; tradesperson: { full_name: string } | null }) => {
                 const status = statusIcons[booking.status] || statusIcons.pending
                 const StatusIcon = status.icon
                 const otherPerson = profile.role === 'homeowner' ? booking.tradesperson : booking.homeowner

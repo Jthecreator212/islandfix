@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { exchangeCodeForSession } from '@/lib/data/auth'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await exchangeCodeForSession(supabase, code)
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`)
     }

@@ -1,4 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser, getProfile } from '@/lib/data/profiles'
+import { getTradesProfile } from '@/lib/data/trades'
+import { getTradesReviews } from '@/lib/data/reviews'
 import { notFound } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import BookingForm from '@/components/BookingForm'
@@ -8,31 +11,18 @@ export default async function TradesProfilePage({ params }: { params: Promise<{ 
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser(supabase)
   let currentProfile = null
   if (user) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    const { data } = await getProfile(supabase, user.id)
     currentProfile = data
   }
 
-  // Fetch tradesperson
-  const { data: tradesProfile } = await supabase
-    .from('trades_profiles')
-    .select('*, profiles!inner(*)')
-    .eq('id', id)
-    .single()
-
+  const { data: tradesProfile } = await getTradesProfile(supabase, id)
   if (!tradesProfile) notFound()
 
-  const profile = tradesProfile.profiles as any
-
-  // Fetch reviews
-  const { data: reviews } = await supabase
-    .from('reviews')
-    .select('*, reviewer:profiles!reviewer_id(full_name, avatar_url)')
-    .eq('tradesperson_id', id)
-    .order('created_at', { ascending: false })
-    .limit(10)
+  const profile = tradesProfile.profiles as Record<string, string | null>
+  const { data: reviews } = await getTradesReviews(supabase, id)
 
   return (
     <>
@@ -114,7 +104,7 @@ export default async function TradesProfilePage({ params }: { params: Promise<{ 
             <div className="md:col-span-2 space-y-4">
               <h2 className="font-display font-bold text-xl">Reviews</h2>
               {reviews && reviews.length > 0 ? (
-                reviews.map((review: any) => (
+                reviews.map((review: { id: string; rating: number; comment: string; created_at: string; reviewer?: { full_name: string; avatar_url: string | null } }) => (
                   <div key={review.id} className="bg-white rounded-xl border border-[#c8d1dc] p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -144,7 +134,7 @@ export default async function TradesProfilePage({ params }: { params: Promise<{ 
             <div>
               <h2 className="font-display font-bold text-xl mb-4">Book This Tradesperson</h2>
               {currentProfile && currentProfile.role === 'homeowner' ? (
-                <BookingForm tradespersonId={id} tradespersonName={profile.full_name} />
+                <BookingForm tradespersonId={id} tradespersonName={profile.full_name || 'Tradesperson'} />
               ) : currentProfile ? (
                 <div className="bg-white rounded-xl border border-[#c8d1dc] p-6 text-center">
                   <p className="text-[#4a5568] text-sm">Only homeowners can book tradespeople</p>

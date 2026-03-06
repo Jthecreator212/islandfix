@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getCurrentUser, getProfile, updateProfile } from '@/lib/data/profiles'
+import { upsertTradesProfile } from '@/lib/data/trades'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { Loader2, Save } from 'lucide-react'
 import { TRADE_CATEGORIES } from '@/lib/types'
 
 export default function EditProfilePage() {
-  const [profile, setProfile] = useState<any>(null)
-  const [tradesProfile, setTradesProfile] = useState<any>(null)
+  const [profile, setProfile] = useState<{ role: string; full_name: string; phone: string | null; location: string | null; bio: string | null; email: string } | null>(null)
+  const [tradesProfile, setTradesProfile] = useState<{ trade_category: string; experience_years: number; hourly_rate: number | null; service_radius_miles: number; skills: string[]; availability_status: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -30,10 +32,10 @@ export default function EditProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUser(supabase)
       if (!user) { router.push('/login'); return }
 
-      const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      const { data: p } = await getProfile(supabase, user.id)
       if (!p) return
       setProfile(p)
       setFullName(p.full_name || '')
@@ -64,34 +66,25 @@ export default function EditProfilePage() {
     setMessage('')
 
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser(supabase)
     if (!user) return
 
-    // Update profile
-    await supabase.from('profiles').update({
-      full_name: fullName,
-      phone,
-      location,
-      bio,
-    }).eq('id', user.id)
+    await updateProfile(supabase, user.id, { full_name: fullName, phone, location, bio })
 
-    // Update trades profile if tradesperson
     if (profile?.role === 'tradesperson') {
-      const tradesData = {
-        id: user.id,
-        trade_category: tradeCategory,
-        experience_years: experienceYears,
-        hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
-        service_radius_miles: serviceRadius,
-        skills: skills.split(',').map(s => s.trim()).filter(Boolean),
-        availability_status: availability,
-      }
-
-      if (tradesProfile) {
-        await supabase.from('trades_profiles').update(tradesData).eq('id', user.id)
-      } else {
-        await supabase.from('trades_profiles').insert(tradesData)
-      }
+      await upsertTradesProfile(
+        supabase,
+        user.id,
+        {
+          trade_category: tradeCategory,
+          experience_years: experienceYears,
+          hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
+          service_radius_miles: serviceRadius,
+          skills: skills.split(',').map(s => s.trim()).filter(Boolean),
+          availability_status: availability,
+        },
+        !!tradesProfile
+      )
     }
 
     setMessage('Profile saved successfully!')

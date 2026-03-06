@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser, getProfile } from '@/lib/data/profiles'
+import { searchTradespeople } from '@/lib/data/trades'
 import Navbar from '@/components/Navbar'
 import SearchFilters from '@/components/SearchFilters'
 import TradesCard from '@/components/TradesCard'
@@ -11,39 +13,15 @@ export default async function SearchPage({
 }) {
   const params = await searchParams
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser(supabase)
 
   let profile = null
   if (user) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    const { data } = await getProfile(supabase, user.id)
     profile = data
   }
 
-  // Build query
-  let query = supabase
-    .from('trades_profiles')
-    .select('*, profiles!inner(*)')
-
-  if (params.category && params.category !== 'all') {
-    query = query.eq('trade_category', params.category)
-  }
-
-  if (params.q) {
-    query = query.or(`profiles.full_name.ilike.%${params.q}%,profiles.location.ilike.%${params.q}%,profiles.bio.ilike.%${params.q}%`)
-  }
-
-  // Sort
-  if (params.sort === 'rating') {
-    query = query.order('rating', { ascending: false })
-  } else if (params.sort === 'price-low') {
-    query = query.order('hourly_rate', { ascending: true })
-  } else if (params.sort === 'price-high') {
-    query = query.order('hourly_rate', { ascending: false })
-  } else {
-    query = query.order('rating', { ascending: false })
-  }
-
-  const { data: tradespeople } = await query.limit(20)
+  const { data: tradespeople } = await searchTradespeople(supabase, params)
 
   return (
     <>
@@ -64,6 +42,7 @@ export default async function SearchPage({
 
           <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tradespeople && tradespeople.length > 0 ? (
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               tradespeople.map((tp: any) => (
                 <TradesCard key={tp.id} tradesperson={tp} profile={tp.profiles} />
               ))
